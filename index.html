@@ -1,0 +1,3496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Duck</title>
+    <style>
+        /* Base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            overflow: hidden;
+            background-color: #222;
+            touch-action: manipulation;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            overflow: hidden;
+            border: 3px solid #444;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+        }
+        
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        #background-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        
+        /* Main Menu */
+        #main-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            z-index: 20;
+            transition: opacity 0.5s;
+        }
+        
+        #main-menu h1 {
+            font-size: 48px;
+            margin-bottom: 40px;
+            text-shadow: 3px 3px 6px #000;
+            background: linear-gradient(to right, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 80%;
+            max-width: 250px;
+        }
+        
+        .menu-btn {
+            padding: 15px 25px;
+            font-size: 20px;
+            background: linear-gradient(to right, #ff9900, #ff6600);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform: scale(1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .menu-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 153, 0, 0.7);
+        }
+        
+        .menu-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* Theme Panel */
+        .theme-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            z-index: 25;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .theme-panel h2 {
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        
+        .theme-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .theme-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .theme-option:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .theme-option.selected {
+            background: rgba(255, 153, 0, 0.3);
+            border: 2px solid #ff9900;
+        }
+        
+        .theme-preview {
+            width: 100px;
+            height: 80px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 2px solid white;
+            transition: all 0.3s;
+        }
+        
+        .theme-name {
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .back-btn {
+            margin-top: 30px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Settings Panel */
+        .settings-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            z-index: 25;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .settings-panel h2 {
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        
+        .setting {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .setting label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .setting input[type="range"] {
+            width: 100%;
+            height: 10px;
+            -webkit-appearance: none;
+            background: #555;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        .setting input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #ff9900;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #ff9900;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* Skins Panel */
+        .skins-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            z-index: 25;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        
+        .skins-panel h2 {
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        
+        .skin-categories {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .skin-category-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .skin-category-btn.active {
+            background: rgba(255, 153, 0, 0.5);
+        }
+        
+        .skin-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .skin-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        
+        .skin-option.selected {
+            background: rgba(255, 153, 0, 0.3);
+            border: 2px solid #ff9900;
+        }
+        
+        .skin-option.locked {
+            filter: brightness(0.5);
+        }
+        
+        .skin-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 2px solid white;
+            background-color: #70c5ce;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .skin-name {
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .skin-price {
+            font-size: 12px;
+            color: gold;
+        }
+        
+        .skin-requirement {
+            font-size: 10px;
+            color: #aaa;
+            text-align: center;
+            margin-top: 5px;
+        }
+        
+        .skin-lock {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            color: gold;
+            font-size: 16px;
+        }
+        
+        /* Game Screens */
+        #start-screen, #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            z-index: 15;
+            transition: opacity 0.5s;
+        }
+        
+        #game-over-screen {
+            display: none;
+        }
+        
+        h1 {
+            font-size: 42px;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px #000;
+            background: linear-gradient(to right, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 20px;
+            background: linear-gradient(to right, #ff9900, #ff6600);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 153, 0, 0.7);
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        /* HUD */
+        .game-hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+        
+        .score-display {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 24px;
+            color: white;
+            text-shadow: 2px 2px 4px #000;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+        
+        .score-icon {
+            font-size: 20px;
+        }
+        
+        #high-score {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 18px;
+            color: white;
+            text-shadow: 2px 2px 4px #000;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+        
+        #bread-count {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            font-size: 18px;
+            color: white;
+            text-shadow: 2px 2px 4px #000;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Menu Button */
+        #menu-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 15;
+            display: none;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        #menu-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+        
+        /* Pause Button */
+        #pause-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 15;
+            display: none;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        #pause-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+        
+        /* Particles */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(1.5); }
+        }
+        
+        @keyframes collect {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            justify-content: center;
+            gap: 40px;
+            z-index: 10;
+        }
+        
+        .mobile-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        
+        /* Monster Warning */
+        #monster-warning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: red;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            text-align: center;
+            z-index: 30;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        /* Boss Health Bar */
+        #boss-health-container {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            border: 2px solid #333;
+            z-index: 10;
+            display: none;
+        }
+        
+        #boss-health-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(to right, #ff0000, #ff9900);
+            border-radius: 8px;
+            transition: width 0.3s;
+        }
+        
+        #boss-health-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px black;
+        }
+        
+        /* Responsive */
+        @media (max-width: 500px) {
+            #game-container {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+            
+            #mobile-controls {
+                display: flex;
+            }
+            
+            .menu-buttons {
+                width: 90%;
+            }
+            
+            .skin-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="background-canvas" width="400" height="600"></canvas>
+        <canvas id="game-canvas" width="400" height="600"></canvas>
+        
+        <!-- Main Menu -->
+        <div id="main-menu">
+            <h1>Flappy Duck</h1>
+            <div class="menu-buttons">
+                <button class="menu-btn play-btn">▶ Play</button>
+                <button class="menu-btn skins-btn">🦆 Skins</button>
+                <button class="menu-btn themes-btn">🎨 Themes</button>
+                <button class="menu-btn settings-btn">⚙ Settings</button>
+            </div>
+        </div>
+        
+        <!-- Theme Panel -->
+        <div class="theme-panel">
+            <h2>Select Theme</h2>
+            <div class="theme-options">
+                <div class="theme-option selected" data-theme="classic">
+                    <div class="theme-preview" style="background: linear-gradient(#70c5ce, #1E90FF);"></div>
+                    <span class="theme-name">Classic</span>
+                </div>
+                <div class="theme-option" data-theme="night">
+                    <div class="theme-preview" style="background: linear-gradient(#0a0a2a, #000033);"></div>
+                    <span class="theme-name">Night</span>
+                </div>
+                <div class="theme-option" data-theme="desert">
+                    <div class="theme-preview" style="background: linear-gradient(#f4a460, #d2b48c);"></div>
+                    <span class="theme-name">Desert</span>
+                </div>
+                <div class="theme-option" data-theme="underwater">
+                    <div class="theme-preview" style="background: linear-gradient(#1a6b8c, #0d4b6e);"></div>
+                    <span class="theme-name">Underwater</span>
+                </div>
+                <div class="theme-option" data-theme="space">
+                    <div class="theme-preview" style="background: linear-gradient(#000000, #1a1a2e);"></div>
+                    <span class="theme-name">Space</span>
+                </div>
+                <div class="theme-option" data-theme="forest">
+                    <div class="theme-preview" style="background: linear-gradient(#5e8c5e, #3a5f3a);"></div>
+                    <span class="theme-name">Forest</span>
+                </div>
+                <div class="theme-option" data-theme="volcano">
+                    <div class="theme-preview" style="background: linear-gradient(#8B0000, #FF4500);"></div>
+                    <span class="theme-name">Volcano</span>
+                </div>
+                <div class="theme-option" data-theme="candy">
+                    <div class="theme-preview" style="background: linear-gradient(#FFB6C1, #FF69B4);"></div>
+                    <span class="theme-name">Candy</span>
+                </div>
+            </div>
+            <button class="back-btn">Back</button>
+        </div>
+        
+        <!-- Skins Panel -->
+        <div class="skins-panel">
+            <h2>Duck Skins</h2>
+            <div class="skin-categories">
+                <button class="skin-category-btn active" data-category="all">All</button>
+                <button class="skin-category-btn" data-category="unlocked">Unlocked</button>
+                <button class="skin-category-btn" data-category="locked">Locked</button>
+            </div>
+            <div class="skin-options">
+                <div class="skin-option selected" data-skin="default">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background-color: #FFD700;"></div>
+                    </div>
+                    <span class="skin-name">Classic Duck</span>
+                    <span class="skin-price">Free</span>
+                </div>
+                <div class="skin-option" data-skin="bread" data-price="50">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background-color: #D2B48C;"></div>
+                    </div>
+                    <span class="skin-name">Bread Duck</span>
+                    <span class="skin-price">50 🍞</span>
+                </div>
+                <div class="skin-option" data-skin="golden" data-requirement="score:100">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background-color: #FFD700;"></div>
+                    </div>
+                    <span class="skin-name">Golden Duck</span>
+                    <span class="skin-requirement">Reach 100 points</span>
+                </div>
+                <div class="skin-option" data-skin="ufo" data-price="150">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background-color: #00FFCC;"></div>
+                    </div>
+                    <span class="skin-name">UFO Duck</span>
+                    <span class="skin-price">150 🍞</span>
+                </div>
+                <div class="skin-option" data-skin="rainbow" data-requirement="score:200">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);"></div>
+                    </div>
+                    <span class="skin-name">Rainbow Duck</span>
+                    <span class="skin-requirement">Reach 200 points</span>
+                </div>
+                <div class="skin-option" data-skin="crown" data-price="250">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background-color: #FFD700; position: relative;">
+                            <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: gold; font-size: 20px;">👑</div>
+                        </div>
+                    </div>
+                    <span class="skin-name">Royal Duck</span>
+                    <span class="skin-price">250 🍞</span>
+                </div>
+                <div class="skin-option" data-skin="ninja" data-requirement="boss:1">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background-color: #333;"></div>
+                    </div>
+                    <span class="skin-name">Ninja Duck</span>
+                    <span class="skin-requirement">Defeat the boss</span>
+                </div>
+                <div class="skin-option" data-skin="robot" data-price="300">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background-color: #AAA;"></div>
+                    </div>
+                    <span class="skin-name">Robot Duck</span>
+                    <span class="skin-price">300 🍞</span>
+                </div>
+                <div class="skin-option" data-skin="ghost" data-requirement="score:300">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background-color: rgba(255, 255, 255, 0.7);"></div>
+                    </div>
+                    <span class="skin-name">Ghost Duck</span>
+                    <span class="skin-requirement">Reach 300 points</span>
+                </div>
+                <div class="skin-option" data-skin="dragon" data-price="500">
+                    <div class="skin-preview">
+                        <div class="duck-preview" style="background-color: #FF4500;"></div>
+                    </div>
+                    <span class="skin-name">Dragon Duck</span>
+                    <span class="skin-price">500 🍞</span>
+                </div>
+            </div>
+            <button class="back-btn">Back</button>
+        </div>
+        
+        <!-- Settings Panel -->
+        <div class="settings-panel">
+            <h2>Settings</h2>
+            <div class="setting">
+                <label for="volume">Game Volume: <span id="volume-value">50%</span></label>
+                <input type="range" id="volume" min="0" max="100" value="50">
+            </div>
+            <div class="setting">
+                <label for="difficulty">Difficulty: <span id="difficulty-value">Medium</span></label>
+                <input type="range" id="difficulty" min="1" max="3" value="2">
+            </div>
+            <div class="setting">
+                <label for="particles">Particle Effects:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="particles" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting">
+                <label for="vibration">Vibration (mobile):</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="vibration" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <button class="back-btn">Back</button>
+        </div>
+        
+        <!-- Game HUD -->
+        <div class="game-hud">
+            <div class="score-display">
+                <span class="score-icon">🍞</span>
+                <span id="score">0</span>
+            </div>
+        </div>
+        
+        <div id="high-score">High Score: 0</div>
+        <div id="bread-count">🍞 <span id="bread-total">0</span></div>
+        <button id="menu-btn">☰</button>
+        <button id="pause-btn">II</button>
+        
+        <!-- Boss Health Bar -->
+        <div id="boss-health-container">
+            <div id="boss-health-bar"></div>
+            <div id="boss-health-text">BOSS: 100%</div>
+        </div>
+        
+        <!-- Monster Warning -->
+        <div id="monster-warning">
+            WARNING!<br>
+            BOSS is coming!
+        </div>
+        
+        <!-- Mobile Controls -->
+        <div id="mobile-controls">
+            <div class="mobile-btn" id="mobile-jump">↑</div>
+        </div>
+        
+        <!-- Game Screens -->
+        <div id="start-screen">
+            <h1>Flappy Duck</h1>
+            <p>Avoid obstacles and collect bread!</p>
+            <button id="start-button">Start Game</button>
+        </div>
+        
+        <div id="game-over-screen">
+            <h1>Game Over</h1>
+            <p id="final-score">Score: 0</p>
+            <p id="bread-earned">Bread earned: 0</p>
+            <p id="new-high-score" style="color: gold; display: none;">New High Score!</p>
+            <button id="restart-button">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const canvas = document.getElementById('game-canvas');
+        const bgCanvas = document.getElementById('background-canvas');
+        const ctx = canvas.getContext('2d');
+        const bgCtx = bgCanvas.getContext('2d');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+        const scoreDisplay = document.getElementById('score');
+        const highScoreDisplay = document.getElementById('high-score');
+        const breadCountDisplay = document.getElementById('bread-total');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const breadEarnedDisplay = document.getElementById('bread-earned');
+        const newHighScoreDisplay = document.getElementById('new-high-score');
+        const menuBtn = document.getElementById('menu-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const mainMenu = document.getElementById('main-menu');
+        const playBtn = document.querySelector('.play-btn');
+        const skinsBtn = document.querySelector('.skins-btn');
+        const themesBtn = document.querySelector('.themes-btn');
+        const settingsBtn = document.querySelector('.settings-btn');
+        const themePanel = document.querySelector('.theme-panel');
+        const skinsPanel = document.querySelector('.skins-panel');
+        const settingsPanel = document.querySelector('.settings-panel');
+        const themeOptions = document.querySelectorAll('.theme-option');
+        const skinOptions = document.querySelectorAll('.skin-option');
+        const skinCategoryBtns = document.querySelectorAll('.skin-category-btn');
+        const backBtns = document.querySelectorAll('.back-btn');
+        const mobileControls = document.getElementById('mobile-controls');
+        const mobileJumpBtn = document.getElementById('mobile-jump');
+        const monsterWarning = document.getElementById('monster-warning');
+        const bossHealthContainer = document.getElementById('boss-health-container');
+        const bossHealthBar = document.getElementById('boss-health-bar');
+        const bossHealthText = document.getElementById('boss-health-text');
+        
+        // Settings elements
+        const volumeSlider = document.getElementById('volume');
+        const volumeValue = document.getElementById('volume-value');
+        const difficultySlider = document.getElementById('difficulty');
+        const difficultyValue = document.getElementById('difficulty-value');
+        const particlesToggle = document.getElementById('particles');
+        const vibrationToggle = document.getElementById('vibration');
+        
+        // Game state
+        let gameRunning = false;
+        let gamePaused = false;
+        let score = 0;
+        let breadCollected = 0;
+        let totalBread = localStorage.getItem('flappyDuckBread') ? parseInt(localStorage.getItem('flappyDuckBread')) : 0;
+        let highScore = localStorage.getItem('flappyDuckHighScore') ? parseInt(localStorage.getItem('flappyDuckHighScore')) : 0;
+        let gameSpeed = 2;
+        let speedIncreaseInterval = 1000;
+        let lastSpeedIncrease = 0;
+        let isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        let monsterActive = false;
+        let monsterSpawned = false;
+        let bossHealth = 100;
+        let bossDefeated = localStorage.getItem('flappyDuckBossDefeated') === 'true';
+        
+        // Settings
+        let volume = 0.5;
+        let difficulty = 2; // 1-easy, 2-medium, 3-hard
+        let particlesEnabled = true;
+        let vibrationEnabled = true;
+        
+        // Current theme and skin
+        let currentTheme = 'classic';
+        let currentSkin = 'default';
+        
+        // Player unlocks
+        let playerUnlocks = {
+            golden: false,
+            rainbow: false,
+            ninja: false,
+            ghost: false
+        };
+        
+        // Load unlocks from localStorage
+        if (localStorage.getItem('flappyDuckUnlocks')) {
+            playerUnlocks = JSON.parse(localStorage.getItem('flappyDuckUnlocks'));
+        }
+        
+        const themes = {
+            classic: {
+                skyGradient: ['#70c5ce', '#1E90FF'],
+                groundColor: '#8B4513',
+                grassColor: '#7CFC00',
+                duckColor: '#FFD700',
+                pipeColor: (hue) => `hsl(${hue}, 70%, 50%)`,
+                cloudColor: 'rgba(255, 255, 255, 0.8)',
+                dangerCloudColor: 'rgba(150, 150, 150, 0.9)',
+                trashcanColor: '#555',
+                obstacleTypes: ['pipe', 'trashcan', 'dangerCloud'],
+                backgroundElements: ['cloud']
+            },
+            night: {
+                skyGradient: ['#0a0a2a', '#000033'],
+                groundColor: '#2a2a2a',
+                grassColor: '#2d5a27',
+                duckColor: '#FFD700',
+                buildingColor: '#333',
+                windowColor: '#ffcc00',
+                starColor: 'rgba(255, 255, 255, 0.8)',
+                dangerStarColor: 'rgba(255, 100, 100, 0.9)',
+                obstacleTypes: ['building', 'trashcan', 'dangerStar'],
+                backgroundElements: ['star']
+            },
+            desert: {
+                skyGradient: ['#f4a460', '#d2b48c'],
+                groundColor: '#a0522d',
+                grassColor: '#8fbc8f',
+                duckColor: '#d2691e',
+                cactusColor: '#2e8b57',
+                tumbleweedColor: '#8b4513',
+                dangerTumbleweedColor: '#5e3a21',
+                obstacleTypes: ['cactus', 'trashcan', 'dangerTumbleweed'],
+                backgroundElements: ['tumbleweed']
+            },
+            underwater: {
+                skyGradient: ['#1a6b8c', '#0d4b6e'],
+                groundColor: '#3d2b1f',
+                grassColor: '#2e8b57',
+                duckColor: '#ffa500',
+                coralColor: (hue) => `hsl(${hue}, 70%, 50%)`,
+                fishColor: 'rgba(255, 100, 100, 0.8)',
+                dangerFishColor: 'rgba(255, 50, 50, 0.9)',
+                obstacleTypes: ['coral', 'trashcan', 'dangerFish'],
+                backgroundElements: ['bubble']
+            },
+            space: {
+                skyGradient: ['#000000', '#1a1a2e'],
+                groundColor: '#333333',
+                grassColor: '#4d4d4d',
+                duckColor: '#ffcc00',
+                ufoColor: '#00ffcc',
+                asteroidColor: '#999999',
+                dangerAsteroidColor: '#666666',
+                obstacleTypes: ['ufo', 'dangerAsteroid'],
+                backgroundElements: ['star']
+            },
+            forest: {
+                skyGradient: ['#5e8c5e', '#3a5f3a'],
+                groundColor: '#5d4037',
+                grassColor: '#4caf50',
+                duckColor: '#ff9800',
+                treeColor: '#4e342e',
+                mushroomColor: '#e53935',
+                dangerMushroomColor: '#c62828',
+                obstacleTypes: ['tree', 'dangerMushroom'],
+                backgroundElements: ['leaf']
+            },
+            volcano: {
+                skyGradient: ['#8B0000', '#FF4500'],
+                groundColor: '#5d4037',
+                grassColor: '#4caf50',
+                duckColor: '#ff9800',
+                lavaRockColor: '#333333',
+                fireballColor: '#FF8C00',
+                obstacleTypes: ['lavaRock', 'fireball'],
+                backgroundElements: ['ember']
+            },
+            candy: {
+                skyGradient: ['#FFB6C1', '#FF69B4'],
+                groundColor: '#D2B48C',
+                grassColor: '#98FB98',
+                duckColor: '#FFD700',
+                candyCaneColor: '#FF0000',
+                gumdropColor: '#9370DB',
+                obstacleTypes: ['candyCane', 'gumdrop'],
+                backgroundElements: ['candyPiece']
+            }
+        };
+        
+        // Duck skins
+        const duckSkins = {
+            default: {
+                bodyColor: '#FFD700',
+                beakColor: '#FFA500',
+                eyeColor: '#000',
+                special: null
+            },
+            bread: {
+                bodyColor: '#D2B48C',
+                beakColor: '#A67C52',
+                eyeColor: '#5C4033',
+                special: null
+            },
+            golden: {
+                bodyColor: '#FFD700',
+                beakColor: '#FFA500',
+                eyeColor: '#000',
+                special: function(ctx, x, y, width, height) {
+                    // Golden shine effect
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.ellipse(x + width/2, y + height/2, width/2, height/2, 0, 0, Math.PI * 2);
+                    ctx.clip();
+                    
+                    const gradient = ctx.createRadialGradient(
+                        x + width/2, y + height/2, 0,
+                        x + width/2, y + height/2, width/2
+                    );
+                    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                    gradient.addColorStop(0.5, 'rgba(255, 215, 0, 0.5)');
+                    gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x, y, width, height);
+                    ctx.restore();
+                }
+            },
+            ufo: {
+                bodyColor: '#00FFCC',
+                beakColor: '#00AA88',
+                eyeColor: '#000',
+                special: function(ctx, x, y, width, height) {
+                    // UFO antenna
+                    ctx.fillStyle = '#00AA88';
+                    ctx.beginPath();
+                    ctx.moveTo(x + width, y + height/3);
+                    ctx.lineTo(x + width + 10, y + height/3 - 15);
+                    ctx.lineTo(x + width + 5, y + height/3 - 10);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // UFO glow
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.ellipse(x + width/2, y + height/2, width/2, height/2, 0, 0, Math.PI * 2);
+                    ctx.clip();
+                    
+                    const gradient = ctx.createRadialGradient(
+                        x + width/2, y + height/2, 0,
+                        x + width/2, y + height/2, width/2
+                    );
+                    gradient.addColorStop(0, 'rgba(0, 255, 204, 0.5)');
+                    gradient.addColorStop(1, 'rgba(0, 255, 204, 0)');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x, y, width, height);
+                    ctx.restore();
+                }
+            },
+            rainbow: {
+                bodyColor: '#FF0000',
+                beakColor: '#FFA500',
+                eyeColor: '#000',
+                special: function(ctx, x, y, width, height) {
+                    // Rainbow effect
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.ellipse(x + width/2, y + height/2, width/2, height/2, 0, 0, Math.PI * 2);
+                    ctx.clip();
+                    
+                    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+                    gradient.addColorStop(0, 'red');
+                    gradient.addColorStop(0.2, 'orange');
+                    gradient.addColorStop(0.4, 'yellow');
+                    gradient.addColorStop(0.6, 'green');
+                    gradient.addColorStop(0.8, 'blue');
+                    gradient.addColorStop(1, 'violet');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x, y, width, height);
+                    ctx.restore();
+                }
+            },
+            crown: {
+                bodyColor: '#FFD700',
+                beakColor: '#FFA500',
+                eyeColor: '#000',
+                special: function(ctx, x, y, width, height) {
+                    // Crown
+                    ctx.fillStyle = 'gold';
+                    ctx.beginPath();
+                    ctx.moveTo(x + width, y + height/4);
+                    ctx.lineTo(x + width + 5, y + height/4 - 10);
+                    ctx.lineTo(x + width + 10, y + height/4);
+                    ctx.lineTo(x + width + 15, y + height/4 - 15);
+                    ctx.lineTo(x + width + 20, y + height/4);
+                    ctx.lineTo(x + width + 15, y + height/4 - 5);
+                    ctx.lineTo(x + width + 10, y + height/4 + 5);
+                    ctx.lineTo(x + width + 5, y + height/4 - 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Jewel
+                    ctx.fillStyle = '#FF1493';
+                    ctx.beginPath();
+                    ctx.moveTo(x + width + 10, y + height/4 - 10);
+                    ctx.lineTo(x + width + 12, y + height/4 - 5);
+                    ctx.lineTo(x + width + 10, y + height/4);
+                    ctx.lineTo(x + width + 8, y + height/4 - 5);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            },
+            ninja: {
+                bodyColor: '#333',
+                beakColor: '#666',
+                eyeColor: '#FFF',
+                special: function(ctx, x, y, width, height) {
+                    // Ninja mask
+                    ctx.fillStyle = '#111';
+                    ctx.beginPath();
+                    ctx.moveTo(x + width, y + height/3);
+                    ctx.lineTo(x + width + 15, y + height/3 + 5);
+                    ctx.lineTo(x + width + 10, y + height/3 + 15);
+                    ctx.lineTo(x + width, y + height/3 + 10);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            },
+            robot: {
+                bodyColor: '#AAA',
+                beakColor: '#777',
+                eyeColor: '#00FF00',
+                special: function(ctx, x, y, width, height) {
+                    // Robot details
+                    ctx.strokeStyle = '#777';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x + width/2, y + height/2, width/3, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    // Antenna
+                    ctx.beginPath();
+                    ctx.moveTo(x + width, y + height/4);
+                    ctx.lineTo(x + width + 10, y + height/4 - 15);
+                    ctx.stroke();
+                    
+                    // LED eye
+                    ctx.fillStyle = '#00FF00';
+                    ctx.beginPath();
+                    ctx.arc(x + width + 5, y + height/4, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            },
+            ghost: {
+                bodyColor: 'rgba(255, 255, 255, 0.7)',
+                beakColor: 'rgba(200, 200, 200, 0.7)',
+                eyeColor: '#000',
+                special: function(ctx, x, y, width, height) {
+                    // Ghostly aura
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.ellipse(x + width/2, y + height/2, width/2, height/2, 0, 0, Math.PI * 2);
+                    ctx.clip();
+                    
+                    const gradient = ctx.createRadialGradient(
+                        x + width/2, y + height/2, 0,
+                        x + width/2, y + height/2, width/2
+                    );
+                    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x, y, width, height);
+                    ctx.restore();
+                }
+            },
+            dragon: {
+                bodyColor: '#FF4500',
+                beakColor: '#FF8C00',
+                eyeColor: '#FF0000',
+                special: function(ctx, x, y, width, height) {
+                    // Dragon wings
+                    ctx.fillStyle = '#FF8C00';
+                    ctx.beginPath();
+                    ctx.moveTo(x + width/2, y + height/2);
+                    ctx.quadraticCurveTo(
+                        x + width/3, y + height/2 - 20,
+                        x + width/4, y + height/2
+                    );
+                    ctx.quadraticCurveTo(
+                        x + width/3, y + height/2 + 20,
+                        x + width/2, y + height/2
+                    );
+                    ctx.fill();
+                    
+                    // Dragon spikes
+                    ctx.beginPath();
+                    ctx.moveTo(x + width, y + height/3);
+                    ctx.lineTo(x + width + 10, y + height/3 + 5);
+                    ctx.lineTo(x + width + 5, y + height/3 + 10);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        };
+        
+        // Background elements
+        let backgroundElements = [];
+        
+        // Duck properties
+        const duck = {
+            x: 100,
+            y: 300,
+            width: 40,
+            height: 40,
+            velocity: 0,
+            gravity: 0.5,
+            jumpStrength: -8,
+            get skin() { return duckSkins[currentSkin]; }
+        };
+        
+        // Obstacles and bread
+        let obstacles = [];
+        let breads = [];
+        let lastObstacleTime = 0;
+        let obstacleInterval = 1500;
+        
+        // Monster properties
+        const monster = {
+            x: 0,
+            y: 0,
+            width: 80,
+            height: 80,
+            speed: 3,
+            active: false
+        };
+        
+        // Game loop
+        let animationId;
+        let lastTime = 0;
+        let timestamp = 0;
+        
+        // Particles
+        let particles = [];
+        
+        // Initialize game
+        initGame();
+        
+        function initGame() {
+            // Set high score and bread count
+            highScoreDisplay.textContent = `High Score: ${highScore}`;
+            breadCountDisplay.textContent = totalBread;
+            
+            // Settings event listeners
+            volumeSlider.addEventListener('input', updateVolume);
+            difficultySlider.addEventListener('input', updateDifficulty);
+            particlesToggle.addEventListener('change', toggleParticles);
+            vibrationToggle.addEventListener('change', toggleVibration);
+            
+            // Event listeners
+            startButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', startGame);
+            menuBtn.addEventListener('click', showMainMenu);
+            pauseBtn.addEventListener('click', togglePause);
+            playBtn.addEventListener('click', () => {
+                mainMenu.style.opacity = '0';
+                setTimeout(() => {
+                    mainMenu.style.display = 'none';
+                    startScreen.style.display = 'flex';
+                }, 500);
+            });
+            
+            skinsBtn.addEventListener('click', () => {
+                mainMenu.style.opacity = '0';
+                setTimeout(() => {
+                    mainMenu.style.display = 'none';
+                    skinsPanel.style.display = 'flex';
+                    setTimeout(() => skinsPanel.style.opacity = '1', 10);
+                    updateSkinDisplay();
+                }, 500);
+            });
+            
+            themesBtn.addEventListener('click', () => {
+                mainMenu.style.opacity = '0';
+                setTimeout(() => {
+                    mainMenu.style.display = 'none';
+                    themePanel.style.display = 'flex';
+                    setTimeout(() => themePanel.style.opacity = '1', 10);
+                }, 500);
+            });
+            
+            settingsBtn.addEventListener('click', () => {
+                mainMenu.style.opacity = '0';
+                setTimeout(() => {
+                    mainMenu.style.display = 'none';
+                    settingsPanel.style.display = 'flex';
+                    setTimeout(() => settingsPanel.style.opacity = '1', 10);
+                }, 500);
+            });
+            
+            backBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    themePanel.style.opacity = '0';
+                    skinsPanel.style.opacity = '0';
+                    settingsPanel.style.opacity = '0';
+                    setTimeout(() => {
+                        themePanel.style.display = 'none';
+                        skinsPanel.style.display = 'none';
+                        settingsPanel.style.display = 'none';
+                        mainMenu.style.display = 'flex';
+                        setTimeout(() => mainMenu.style.opacity = '1', 10);
+                    }, 500);
+                });
+            });
+            
+            // Theme selection
+            themeOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    themeOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    setTheme(option.dataset.theme);
+                });
+            });
+            
+            // Skin selection
+            skinOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const skin = this.dataset.skin;
+                    
+                    // Check if skin is locked
+                    if (this.classList.contains('locked')) {
+                        const price = parseInt(this.dataset.price);
+                        const requirement = this.dataset.requirement;
+                        
+                        if (price && totalBread >= price) {
+                            // Purchase with bread
+                            totalBread -= price;
+                            breadCountDisplay.textContent = totalBread;
+                            localStorage.setItem('flappyDuckBread', totalBread);
+                            this.classList.remove('locked');
+                            this.querySelector('.skin-lock').style.display = 'none';
+                            selectSkin(skin);
+                        } else if (requirement) {
+                            // Show requirement message
+                            alert(`You need to ${requirement.replace(':', ' ')} to unlock this skin!`);
+                            return;
+                        } else {
+                            return;
+                        }
+                    }
+                    
+                    selectSkin(skin);
+                });
+            });
+            
+            // Skin category filter
+            skinCategoryBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    skinCategoryBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const category = this.dataset.category;
+                    skinOptions.forEach(option => {
+                        const isLocked = option.classList.contains('locked');
+                        
+                        switch(category) {
+                            case 'all':
+                                option.style.display = 'flex';
+                                break;
+                            case 'unlocked':
+                                option.style.display = isLocked ? 'none' : 'flex';
+                                break;
+                            case 'locked':
+                                option.style.display = isLocked ? 'flex' : 'none';
+                                break;
+                        }
+                    });
+                });
+            });
+            
+            // Mobile controls
+            if (isMobile) {
+                mobileControls.style.display = 'flex';
+                mobileJumpBtn.addEventListener('touchstart', handleJump);
+            }
+            
+            // Keyboard controls
+            document.addEventListener('keydown', function(e) {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    handleJump(e);
+                }
+                if (e.code === 'KeyP') {
+                    togglePause();
+                }
+                if (e.code === 'Escape' && gameRunning) {
+                    togglePause();
+                }
+                if (e.code === 'KeyM') {
+                    showMainMenu();
+                }
+            });
+            
+            canvas.addEventListener('click', handleJump);
+            canvas.addEventListener('mousedown', handleJump);
+            canvas.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+            
+            // Initial draw
+            drawCurrentScreen();
+        }
+        
+        function updateSkinDisplay() {
+            skinOptions.forEach(option => {
+                const skin = option.dataset.skin;
+                const price = option.dataset.price;
+                const requirement = option.dataset.requirement;
+                
+                // Check if skin is unlocked
+                if (skin === 'default' || 
+                    (price && totalBread >= parseInt(price)) || 
+                    (requirement && checkRequirement(requirement))) {
+                    option.classList.remove('locked');
+                    if (option.querySelector('.skin-lock')) {
+                        option.querySelector('.skin-lock').style.display = 'none';
+                    }
+                } else {
+                    option.classList.add('locked');
+                    if (!option.querySelector('.skin-lock')) {
+                        const lockIcon = document.createElement('div');
+                        lockIcon.className = 'skin-lock';
+                        lockIcon.innerHTML = '🔒';
+                        option.appendChild(lockIcon);
+                    } else {
+                        option.querySelector('.skin-lock').style.display = 'block';
+                    }
+                }
+                
+                // Update preview
+                const preview = option.querySelector('.duck-preview');
+                if (preview) {
+                    preview.style.backgroundColor = duckSkins[skin].bodyColor;
+                    
+                    // Clear previous preview
+                    preview.innerHTML = '';
+                    
+                    // Draw simple duck preview
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 60;
+                    canvas.height = 60;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Duck body
+                    ctx.fillStyle = duckSkins[skin].bodyColor;
+                    ctx.beginPath();
+                    ctx.ellipse(30, 30, 20, 20, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Duck head
+                    ctx.beginPath();
+                    ctx.arc(50, 20, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Duck beak
+                    ctx.fillStyle = duckSkins[skin].beakColor;
+                    ctx.beginPath();
+                    ctx.moveTo(55, 20);
+                    ctx.lineTo(60, 20);
+                    ctx.lineTo(55, 25);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Duck eye
+                    ctx.fillStyle = duckSkins[skin].eyeColor;
+                    ctx.beginPath();
+                    ctx.arc(55, 15, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Special effect if any
+                    if (duckSkins[skin].special) {
+                        duckSkins[skin].special(ctx, 10, 10, 40, 40);
+                    }
+                    
+                    preview.appendChild(canvas);
+                }
+            });
+        }
+        
+        function checkRequirement(requirement) {
+            const [type, value] = requirement.split(':');
+            
+            switch(type) {
+                case 'score':
+                    return highScore >= parseInt(value);
+                case 'boss':
+                    return bossDefeated;
+                default:
+                    return false;
+            }
+        }
+        
+        function selectSkin(skin) {
+            skinOptions.forEach(opt => opt.classList.remove('selected'));
+            document.querySelector(`.skin-option[data-skin="${skin}"]`).classList.add('selected');
+            currentSkin = skin;
+        }
+        
+        function showMainMenu() {
+            if (!gameRunning) return;
+            
+            gamePaused = true;
+            cancelAnimationFrame(animationId);
+            pauseBtn.style.display = 'none';
+            menuBtn.style.display = 'none';
+            
+            mainMenu.style.display = 'flex';
+            setTimeout(() => mainMenu.style.opacity = '1', 10);
+        }
+        
+        function updateVolume() {
+            volume = volumeSlider.value / 100;
+            volumeValue.textContent = `${volumeSlider.value}%`;
+        }
+        
+        function updateDifficulty() {
+            difficulty = parseInt(difficultySlider.value);
+            const difficulties = ['Easy', 'Medium', 'Hard'];
+            difficultyValue.textContent = difficulties[difficulty - 1];
+            
+            // Adjust game parameters based on difficulty
+            switch(difficulty) {
+                case 1: // Easy
+                    duck.gravity = 0.4;
+                    duck.jumpStrength = -9;
+                    break;
+                case 2: // Medium
+                    duck.gravity = 0.5;
+                    duck.jumpStrength = -8;
+                    break;
+                case 3: // Hard
+                    duck.gravity = 0.6;
+                    duck.jumpStrength = -7;
+                    break;
+            }
+        }
+        
+        function toggleParticles() {
+            particlesEnabled = particlesToggle.checked;
+        }
+        
+        function toggleVibration() {
+            vibrationEnabled = vibrationToggle.checked;
+        }
+        
+        function setTheme(theme) {
+            currentTheme = theme;
+            backgroundElements = createBackgroundElements(20);
+            drawCurrentScreen();
+        }
+        
+        function createBackgroundElements(count) {
+            const elements = [];
+            const theme = themes[currentTheme];
+            
+            for (let i = 0; i < count; i++) {
+                const type = theme.backgroundElements[0];
+                let element;
+                
+                if (type === 'cloud') {
+                    element = {
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height / 3),
+                        width: 60 + Math.random() * 40,
+                        height: 30 + Math.random() * 20,
+                        speed: 0.5 + Math.random() * 0.5,
+                        type: 'cloud'
+                    };
+                } else if (type === 'star') {
+                    element = {
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height / 2),
+                        size: 1 + Math.random() * 2,
+                        speed: 0.2 + Math.random() * 0.3,
+                        type: 'star',
+                        alpha: 0.5 + Math.random() * 0.5
+                    };
+                } else if (type === 'tumbleweed') {
+                    element = {
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height / 2) + 100,
+                        size: 15 + Math.random() * 15,
+                        speed: 0.5 + Math.random() * 0.5,
+                        type: 'tumbleweed'
+                    };
+                } else if (type === 'bubble') {
+                    element = {
+                        x: Math.random() * canvas.width,
+                        y: canvas.height - 50 + Math.random() * 20,
+                        size: 5 + Math.random() * 15,
+                        speed: 1 + Math.random() * 1.5,
+                        type: 'bubble'
+                    };
+                } else if (type === 'leaf') {
+                    element = {
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height / 2),
+                        size: 10 + Math.random() * 10,
+                        speed: 0.3 + Math.random() * 0.4,
+                        type: 'leaf',
+                        rotation: Math.random() * Math.PI * 2,
+                        rotationSpeed: (Math.random() - 0.5) * 0.1
+                    };
+                } else if (type === 'ember') {
+                    element = {
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height / 2),
+                        size: 2 + Math.random() * 3,
+                        speed: 0.5 + Math.random() * 0.7,
+                        type: 'ember',
+                        alpha: 0.7 + Math.random() * 0.3
+                    };
+                } else if (type === 'candyPiece') {
+                    element = {
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height / 2),
+                        size: 5 + Math.random() * 10,
+                        speed: 0.4 + Math.random() * 0.6,
+                        type: 'candyPiece',
+                        color: `hsl(${Math.random() * 360}, 80%, 70%)`
+                    };
+                }
+                
+                elements.push(element);
+            }
+            
+            return elements;
+        }
+        
+        function drawCurrentScreen() {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            
+            if (!gameRunning && startScreen.style.display !== 'none') {
+                drawDuck();
+            } 
+            else if (gameOverScreen.style.display === 'flex') {
+                drawObstacles();
+                drawBread();
+                if (monster.active) drawMonster();
+                drawDuck();
+            }
+            else if (gameRunning) {
+                drawObstacles();
+                drawBread();
+                if (monster.active) drawMonster();
+                drawDuck();
+            }
+        }
+        
+        function togglePause() {
+            if (!gameRunning) return;
+            
+            gamePaused = !gamePaused;
+            
+            if (gamePaused) {
+                cancelAnimationFrame(animationId);
+                pauseBtn.textContent = "▶";
+            } else {
+                lastTime = performance.now();
+                gameLoop(lastTime);
+                pauseBtn.textContent = "II";
+            }
+        }
+        
+        function handleJump(e) {
+            if (!gameRunning && startScreen.style.display !== 'none') {
+                if (e.type === 'click' || e.code === 'Space') {
+                    startGame();
+                }
+                return;
+            }
+            
+            if (e.type === 'mousedown' && e.button === 2) {
+                return;
+            }
+            
+            if (gameRunning && !gamePaused) {
+                duck.velocity = duck.jumpStrength;
+                
+                // Vibrate on mobile if enabled
+                if (isMobile && navigator.vibrate && vibrationEnabled) {
+                    navigator.vibrate(30);
+                }
+            }
+        }
+        
+        function createCollectParticles(x, y) {
+            if (!particlesEnabled) return;
+            
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    size: 3 + Math.random() * 3,
+                    color: 'gold',
+                    velocityX: -3 + Math.random() * 6,
+                    velocityY: -3 + Math.random() * 6,
+                    life: 20 + Math.random() * 20
+                });
+            }
+        }
+        
+        function createCollisionParticles(x, y) {
+            if (!particlesEnabled) return;
+            
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    size: 2 + Math.random() * 4,
+                    color: '#ff3300',
+                    velocityX: -5 + Math.random() * 10,
+                    velocityY: -5 + Math.random() * 10,
+                    life: 15 + Math.random() * 15
+                });
+            }
+        }
+        
+        function startGame() {
+            gameRunning = true;
+            gamePaused = false;
+            score = 0;
+            breadCollected = 0;
+            gameSpeed = difficulty === 1 ? 1.5 : difficulty === 2 ? 2 : 2.5;
+            lastSpeedIncrease = 0;
+            obstacles = [];
+            breads = [];
+            particles = [];
+            monster.active = false;
+            monsterSpawned = false;
+            bossHealth = 100;
+            
+            duck.y = 300;
+            duck.velocity = 0;
+            
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            newHighScoreDisplay.style.display = 'none';
+            menuBtn.style.display = 'block';
+            pauseBtn.style.display = 'block';
+            pauseBtn.textContent = "II";
+            monsterWarning.style.display = 'none';
+            bossHealthContainer.style.display = 'none';
+            
+            scoreDisplay.textContent = score;
+            
+            lastTime = performance.now();
+            gameLoop(lastTime);
+        }
+        
+        function gameLoop(currentTime) {
+            if (!gameRunning || gamePaused) return;
+            
+            timestamp = currentTime;
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawBackground();
+            updateBackgroundElements(deltaTime);
+            updateDuck(deltaTime);
+            updateObstacles(deltaTime);
+            drawObstacles();
+            updateBread();
+            drawBread();
+            updateParticles();
+            drawParticles();
+            
+            // Check for monster spawn
+            if (score >= 125 && !monsterSpawned) {
+                spawnMonster();
+                monsterSpawned = true;
+            }
+            
+            // Update and draw monster if active
+            if (monster.active) {
+                updateMonster();
+                drawMonster();
+            }
+            
+            drawDuck();
+            checkCollisions();
+            
+            if (score - lastSpeedIncrease >= speedIncreaseInterval) {
+                gameSpeed += 0.5;
+                lastSpeedIncrease = score;
+            }
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function spawnMonster() {
+            monsterWarning.style.display = 'block';
+            setTimeout(() => {
+                monsterWarning.style.display = 'none';
+                monster.active = true;
+                monster.x = canvas.width;
+                monster.y = Math.random() * (canvas.height - 100);
+                bossHealthContainer.style.display = 'block';
+                updateBossHealth();
+            }, 2000);
+        }
+        
+        function updateMonster() {
+            monster.x -= monster.speed * gameSpeed;
+            
+            // Random vertical movement
+            monster.y += (Math.random() - 0.5) * 3;
+            
+            // Keep monster within bounds
+            if (monster.y < 20) monster.y = 20;
+            if (monster.y > canvas.height - 100) monster.y = canvas.height - 100;
+            
+            // Respawn monster if it goes off screen
+            if (monster.x + monster.width < 0) {
+                monster.x = canvas.width;
+                monster.y = Math.random() * (canvas.height - 100);
+            }
+        }
+        
+        function updateBossHealth() {
+            bossHealthBar.style.width = `${bossHealth}%`;
+            bossHealthText.textContent = `BOSS: ${bossHealth}%`;
+            
+            // Change color based on health
+            if (bossHealth > 60) {
+                bossHealthBar.style.background = 'linear-gradient(to right, #00ff00, #99ff00)';
+            } else if (bossHealth > 30) {
+                bossHealthBar.style.background = 'linear-gradient(to right, #ffff00, #ffcc00)';
+            } else {
+                bossHealthBar.style.background = 'linear-gradient(to right, #ff0000, #ff6600)';
+            }
+        }
+        
+        function drawMonster() {
+            const theme = themes[currentTheme];
+            
+            // Draw different monsters based on theme
+            if (currentTheme === 'space') {
+                // UFO monster
+                ctx.fillStyle = theme.ufoColor;
+                ctx.beginPath();
+                ctx.ellipse(monster.x + monster.width/2, monster.y + monster.height/3, 
+                            monster.width/2, monster.height/4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = 'rgba(100, 255, 100, 0.7)';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/2, monster.y + monster.height/3, 
+                        monster.width/4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = theme.ufoColor;
+                ctx.beginPath();
+                ctx.moveTo(monster.x + monster.width/4, monster.y + monster.height/3);
+                ctx.lineTo(monster.x + monster.width/2, monster.y + monster.height);
+                ctx.lineTo(monster.x + monster.width*3/4, monster.y + monster.height/3);
+                ctx.fill();
+                
+                // Alien inside
+                ctx.fillStyle = '#00aa00';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/2, monster.y + monster.height/3, 
+                        monster.width/8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/2 - 5, monster.y + monster.height/3 - 3, 
+                        2, 0, Math.PI * 2);
+                ctx.arc(monster.x + monster.width/2 + 5, monster.y + monster.height/3 - 3, 
+                        2, 0, Math.PI * 2);
+                ctx.fill();
+            } 
+            else if (currentTheme === 'forest') {
+                // Spider monster
+                ctx.fillStyle = '#333';
+                // Body
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/2, monster.y + monster.height/2, 
+                        monster.width/3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Head
+                ctx.fillStyle = '#111';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/2, monster.y + monster.height/3, 
+                        monster.width/5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/2 - 5, monster.y + monster.height/3 - 3, 
+                        3, 0, Math.PI * 2);
+                ctx.arc(monster.x + monster.width/2 + 5, monster.y + monster.height/3 - 3, 
+                        3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Fangs
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.moveTo(monster.x + monster.width/2 - 3, monster.y + monster.height/3 + 5);
+                ctx.lineTo(monster.x + monster.width/2, monster.y + monster.height/3 + 8);
+                ctx.lineTo(monster.x + monster.width/2 - 1, monster.y + monster.height/3 + 5);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(monster.x + monster.width/2 + 3, monster.y + monster.height/3 + 5);
+                ctx.lineTo(monster.x + monster.width/2, monster.y + monster.height/3 + 8);
+                ctx.lineTo(monster.x + monster.width/2 + 1, monster.y + monster.height/3 + 5);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Legs
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                for (let i = 0; i < 4; i++) {
+                    const angle = Math.PI/5 * (i - 1.5);
+                    ctx.beginPath();
+                    ctx.moveTo(monster.x + monster.width/2, monster.y + monster.height/2);
+                    ctx.lineTo(monster.x + monster.width/2 + Math.cos(angle) * 30, 
+                              monster.y + monster.height/2 + Math.sin(angle) * 30);
+                    ctx.stroke();
+                }
+            }
+            else if (currentTheme === 'volcano') {
+                // Lava monster
+                // Body
+                const gradient = ctx.createLinearGradient(
+                    monster.x, monster.y, 
+                    monster.x + monster.width, monster.y + monster.height
+                );
+                gradient.addColorStop(0, '#FF4500');
+                gradient.addColorStop(0.5, '#FF8C00');
+                gradient.addColorStop(1, '#FF4500');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.ellipse(
+                    monster.x + monster.width/2, monster.y + monster.height/2,
+                    monster.width/2, monster.height/2, 0, 0, Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/3, monster.y + monster.height/3, 
+                        5, 0, Math.PI * 2);
+                ctx.arc(monster.x + monster.width*2/3, monster.y + monster.height/3, 
+                        5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mouth
+                ctx.fillStyle = '#8B0000';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/2, monster.y + monster.height*2/3, 
+                        monster.width/4, 0, Math.PI);
+                ctx.fill();
+                
+                // Lava cracks
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(monster.x + monster.width/4, monster.y + monster.height/2);
+                ctx.lineTo(monster.x + monster.width/3, monster.y + monster.height/3);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(monster.x + monster.width*3/4, monster.y + monster.height/2);
+                ctx.lineTo(monster.x + monster.width*2/3, monster.y + monster.height/3);
+                ctx.stroke();
+            }
+            else if (currentTheme === 'candy') {
+                // Candy monster
+                // Body
+                ctx.fillStyle = '#FF69B4';
+                ctx.beginPath();
+                ctx.ellipse(
+                    monster.x + monster.width/2, monster.y + monster.height/2,
+                    monster.width/2, monster.height/2, 0, 0, Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/3, monster.y + monster.height/3, 
+                        6, 0, Math.PI * 2);
+                ctx.arc(monster.x + monster.width*2/3, monster.y + monster.height/3, 
+                        6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#9370DB';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/3, monster.y + monster.height/3, 
+                        3, 0, Math.PI * 2);
+                ctx.arc(monster.x + monster.width*2/3, monster.y + monster.height/3, 
+                        3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mouth
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/2, monster.y + monster.height*2/3, 
+                        monster.width/4, 0, Math.PI);
+                ctx.fill();
+                
+                // Teeth
+                ctx.fillStyle = '#FFFFFF';
+                for (let i = 0; i < 4; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        monster.x + monster.width/2 - monster.width/4 + (monster.width/6 * i), 
+                        monster.y + monster.height*2/3
+                    );
+                    ctx.lineTo(
+                        monster.x + monster.width/2 - monster.width/4 + (monster.width/6 * i) + monster.width/12, 
+                        monster.y + monster.height*2/3 - 5
+                    );
+                    ctx.lineTo(
+                        monster.x + monster.width/2 - monster.width/4 + (monster.width/6 * i) + monster.width/6, 
+                        monster.y + monster.height*2/3
+                    );
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                // Sprinkles
+                ctx.fillStyle = '#FFFFFF';
+                for (let i = 0; i < 10; i++) {
+                    const x = monster.x + Math.random() * monster.width;
+                    const y = monster.y + Math.random() * monster.height;
+                    
+                    // Check if point is inside the ellipse
+                    const normalizedX = (x - (monster.x + monster.width/2)) / (monster.width/2);
+                    const normalizedY = (y - (monster.y + monster.height/2)) / (monster.height/2);
+                    
+                    if (normalizedX * normalizedX + normalizedY * normalizedY <= 1) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+            else {
+                // Default monster (ghost)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.beginPath();
+                ctx.moveTo(monster.x + monster.width/2, monster.y);
+                ctx.quadraticCurveTo(
+                    monster.x + monster.width, monster.y + monster.height/3,
+                    monster.x + monster.width, monster.y + monster.height*2/3
+                );
+                ctx.quadraticCurveTo(
+                    monster.x + monster.width*3/4, monster.y + monster.height,
+                    monster.x + monster.width/2, monster.y + monster.height
+                );
+                ctx.quadraticCurveTo(
+                    monster.x + monster.width/4, monster.y + monster.height,
+                    monster.x, monster.y + monster.height*2/3
+                );
+                ctx.quadraticCurveTo(
+                    monster.x, monster.y + monster.height/3,
+                    monster.x + monster.width/2, monster.y
+                );
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/3, monster.y + monster.height/3, 
+                        5, 0, Math.PI * 2);
+                ctx.arc(monster.x + monster.width*2/3, monster.y + monster.height/3, 
+                        5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mouth
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(monster.x + monster.width/2, monster.y + monster.height*2/3, 
+                        monster.width/4, 0, Math.PI);
+                ctx.fill();
+            }
+        }
+        
+        function drawBackground() {
+            const theme = themes[currentTheme];
+            
+            // Sky gradient
+            const skyGradient = bgCtx.createLinearGradient(0, 0, 0, bgCanvas.height);
+            skyGradient.addColorStop(0, theme.skyGradient[0]);
+            skyGradient.addColorStop(1, theme.skyGradient[1]);
+            bgCtx.fillStyle = skyGradient;
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+            
+            // Ground
+            bgCtx.fillStyle = theme.groundColor;
+            bgCtx.fillRect(0, bgCanvas.height - 50, bgCanvas.width, 50);
+            
+            // Grass on top of ground
+            bgCtx.fillStyle = theme.grassColor;
+            bgCtx.fillRect(0, bgCanvas.height - 50, bgCanvas.width, 10);
+        }
+        
+        function updateBackgroundElements(deltaTime) {
+            backgroundElements.forEach(element => {
+                element.x -= element.speed * gameSpeed;
+                
+                if (element.type === 'leaf') {
+                    element.rotation += element.rotationSpeed;
+                }
+                
+                if (element.x + (element.width || element.size) < 0) {
+                    element.x = bgCanvas.width;
+                    if (element.type === 'bubble') {
+                        element.y = bgCanvas.height - 50 + Math.random() * 20;
+                    } else if (element.type === 'leaf') {
+                        element.y = Math.random() * (bgCanvas.height / 2);
+                        element.rotation = Math.random() * Math.PI * 2;
+                    } else {
+                        element.y = Math.random() * (bgCanvas.height / (element.type === 'tumbleweed' ? 2 : 3));
+                    }
+                }
+            });
+        }
+        
+        function drawBackgroundElements() {
+            const theme = themes[currentTheme];
+            
+            backgroundElements.forEach(element => {
+                if (element.type === 'cloud') {
+                    bgCtx.fillStyle = theme.cloudColor;
+                    bgCtx.beginPath();
+                    bgCtx.arc(element.x + 20, element.y + 20, 20, 0, Math.PI * 2);
+                    bgCtx.arc(element.x + 40, element.y + 15, 25, 0, Math.PI * 2);
+                    bgCtx.arc(element.x + 60, element.y + 20, 20, 0, Math.PI * 2);
+                    bgCtx.arc(element.x + 40, element.y + 30, 25, 0, Math.PI * 2);
+                    bgCtx.fill();
+                } else if (element.type === 'star') {
+                    bgCtx.fillStyle = `rgba(255, 255, 255, ${element.alpha})`;
+                    bgCtx.beginPath();
+                    bgCtx.arc(element.x, element.y, element.size, 0, Math.PI * 2);
+                    bgCtx.fill();
+                } else if (element.type === 'tumbleweed') {
+                    bgCtx.fillStyle = theme.tumbleweedColor;
+                    bgCtx.beginPath();
+                    bgCtx.arc(element.x, element.y, element.size, 0, Math.PI * 2);
+                    bgCtx.fill();
+                    
+                    // Tumbleweed details
+                    bgCtx.strokeStyle = '#8b4513';
+                    bgCtx.lineWidth = 2;
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (Math.PI * 2) / 8 * i;
+                        bgCtx.beginPath();
+                        bgCtx.moveTo(element.x + Math.cos(angle) * element.size/2, element.y + Math.sin(angle) * element.size/2);
+                        bgCtx.lineTo(element.x + Math.cos(angle) * element.size, element.y + Math.sin(angle) * element.size);
+                        bgCtx.stroke();
+                    }
+                } else if (element.type === 'bubble') {
+                    bgCtx.fillStyle = `rgba(100, 200, 255, ${0.3 + element.size/30})`;
+                    bgCtx.beginPath();
+                    bgCtx.arc(element.x, element.y, element.size, 0, Math.PI * 2);
+                    bgCtx.fill();
+                    
+                    bgCtx.strokeStyle = `rgba(255, 255, 255, ${0.5 + element.size/40})`;
+                    bgCtx.lineWidth = 1;
+                    bgCtx.beginPath();
+                    bgCtx.arc(element.x - element.size/3, element.y - element.size/3, element.size/4, 0, Math.PI * 2);
+                    bgCtx.stroke();
+                } else if (element.type === 'leaf') {
+                    bgCtx.save();
+                    bgCtx.translate(element.x, element.y);
+                    bgCtx.rotate(element.rotation);
+                    
+                    bgCtx.fillStyle = '#8bc34a';
+                    bgCtx.beginPath();
+                    bgCtx.moveTo(0, 0);
+                    bgCtx.bezierCurveTo(
+                        element.size, -element.size/2,
+                        element.size*1.5, 0,
+                        element.size, element.size
+                    );
+                    bgCtx.bezierCurveTo(
+                        element.size/2, element.size/2,
+                        0, element.size/3,
+                        0, 0
+                    );
+                    bgCtx.fill();
+                    
+                    bgCtx.strokeStyle = '#4caf50';
+                    bgCtx.lineWidth = 1;
+                    bgCtx.beginPath();
+                    bgCtx.moveTo(0, 0);
+                    bgCtx.lineTo(element.size, element.size/2);
+                    bgCtx.stroke();
+                    
+                    bgCtx.restore();
+                } else if (element.type === 'ember') {
+                    bgCtx.fillStyle = `rgba(255, 100, 0, ${element.alpha})`;
+                    bgCtx.beginPath();
+                    bgCtx.arc(element.x, element.y, element.size, 0, Math.PI * 2);
+                    bgCtx.fill();
+                    
+                    // Glow effect
+                    const gradient = bgCtx.createRadialGradient(
+                        element.x, element.y, 0,
+                        element.x, element.y, element.size * 2
+                    );
+                    gradient.addColorStop(0, `rgba(255, 100, 0, ${element.alpha * 0.5})`);
+                    gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+                    
+                    bgCtx.fillStyle = gradient;
+                    bgCtx.beginPath();
+                    bgCtx.arc(element.x, element.y, element.size * 2, 0, Math.PI * 2);
+                    bgCtx.fill();
+                } else if (element.type === 'candyPiece') {
+                    bgCtx.fillStyle = element.color;
+                    bgCtx.beginPath();
+                    
+                    // Random candy shape
+                    if (Math.random() > 0.5) {
+                        // Round candy
+                        bgCtx.arc(element.x, element.y, element.size, 0, Math.PI * 2);
+                    } else {
+                        // Square candy
+                        bgCtx.rect(element.x - element.size/2, element.y - element.size/2, element.size, element.size);
+                    }
+                    
+                    bgCtx.fill();
+                    
+                    // Candy stripe
+                    bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                    bgCtx.lineWidth = 1;
+                    bgCtx.beginPath();
+                    bgCtx.moveTo(element.x - element.size/2, element.y);
+                    bgCtx.lineTo(element.x + element.size/2, element.y);
+                    bgCtx.stroke();
+                }
+            });
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].x += particles[i].velocityX;
+                particles[i].y += particles[i].velocityY;
+                particles[i].life--;
+                
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawParticles() {
+            if (!particlesEnabled) return;
+            
+            particles.forEach(particle => {
+                ctx.fillStyle = particle.color;
+                ctx.globalAlpha = particle.life / 50;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+        
+        function updateDuck(deltaTime) {
+            if (gamePaused) return;
+            
+            duck.velocity += duck.gravity;
+            duck.y += duck.velocity;
+            
+            if (duck.y < 0) {
+                duck.y = 0;
+                duck.velocity = 0;
+            }
+            
+            if (duck.y + duck.height > canvas.height - 50) {
+                duck.y = canvas.height - 50 - duck.height;
+                duck.velocity = 0;
+                
+                if (gameRunning) {
+                    gameOver();
+                }
+            }
+        }
+        
+        function drawDuck() {
+            const skin = duckSkins[currentSkin];
+            
+            // Duck body
+            ctx.fillStyle = skin.bodyColor;
+            ctx.beginPath();
+            ctx.ellipse(duck.x + duck.width/2, duck.y + duck.height/2, duck.width/2, duck.height/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Duck head
+            ctx.beginPath();
+            ctx.arc(duck.x + duck.width, duck.y + duck.height/3, duck.width/3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Duck beak
+            ctx.fillStyle = skin.beakColor;
+            ctx.beginPath();
+            ctx.moveTo(duck.x + duck.width + duck.width/3, duck.y + duck.height/3);
+            ctx.lineTo(duck.x + duck.width + duck.width/2, duck.y + duck.height/3);
+            ctx.lineTo(duck.x + duck.width + duck.width/3, duck.y + duck.height/3 + duck.height/6);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Duck eye
+            ctx.fillStyle = skin.eyeColor;
+            ctx.beginPath();
+            ctx.arc(duck.x + duck.width + duck.width/4, duck.y + duck.height/4, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Duck wings (flapping animation)
+            ctx.fillStyle = skin.bodyColor;
+            ctx.beginPath();
+            const wingY = duck.y + duck.height/2;
+            const wingFlap = gamePaused ? 0 : Math.sin(Date.now() / 100) * 5 * (Math.abs(duck.velocity) / 10);
+            ctx.moveTo(duck.x + duck.width/2, wingY);
+            ctx.quadraticCurveTo(
+                duck.x + duck.width/3, wingY - 10 + wingFlap,
+                duck.x + duck.width/4, wingY
+            );
+            ctx.quadraticCurveTo(
+                duck.x + duck.width/3, wingY + 10 + wingFlap,
+                duck.x + duck.width/2, wingY
+            );
+            ctx.fill();
+            
+            // Special skin effects
+            if (skin.special) {
+                skin.special(ctx, duck.x, duck.y, duck.width, duck.height);
+            }
+        }
+        
+        function updateObstacles(deltaTime) {
+            if (gamePaused) return;
+            
+            if (timestamp - lastObstacleTime > obstacleInterval / gameSpeed) {
+                addObstacle();
+                lastObstacleTime = timestamp;
+            }
+            
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= 3 * gameSpeed;
+                
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    if (gameRunning) {
+                        score += 1;
+                        scoreDisplay.textContent = score;
+                    }
+                }
+            }
+        }
+        
+        function drawObstacles() {
+            const theme = themes[currentTheme];
+            
+            obstacles.forEach(obstacle => {
+                if (obstacle.type === 'pipe') {
+                    // Classic pipes
+                    ctx.fillStyle = obstacle.color;
+                    ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.topHeight);
+                    ctx.fillRect(obstacle.x, canvas.height - obstacle.bottomHeight - 50, obstacle.width, obstacle.bottomHeight);
+                    
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(obstacle.x - 5, obstacle.topHeight - 15, obstacle.width + 10, 15);
+                    ctx.fillRect(obstacle.x - 5, canvas.height - obstacle.bottomHeight - 50, obstacle.width + 10, 15);
+                } 
+                else if (obstacle.type === 'building') {
+                    // Night theme buildings with windows
+                    ctx.fillStyle = theme.buildingColor;
+                    ctx.fillRect(obstacle.x, canvas.height - obstacle.height - 50, obstacle.width, obstacle.height);
+                    
+                    // Draw windows with proper alignment
+                    ctx.fillStyle = theme.windowColor;
+                    const windowRows = Math.floor(obstacle.height / 30);
+                    const windowCols = Math.floor(obstacle.width / 20);
+                    const windowWidth = 8;
+                    const windowHeight = 10;
+                    const windowSpacingX = (obstacle.width - (windowCols * windowWidth)) / (windowCols + 1);
+                    const windowSpacingY = 15;
+                    
+                    for (let row = 0; row < windowRows; row++) {
+                        for (let col = 0; col < windowCols; col++) {
+                            if (Math.random() > 0.3) { // Randomly turn some lights off
+                                ctx.fillRect(
+                                    obstacle.x + col * (windowWidth + windowSpacingX) + windowSpacingX,
+                                    canvas.height - obstacle.height - 50 + row * windowSpacingY + 15,
+                                    windowWidth,
+                                    windowHeight
+                                );
+                            }
+                        }
+                    }
+                }
+                else if (obstacle.type === 'cactus') {
+                    // Desert theme cactus
+                    ctx.fillStyle = theme.cactusColor;
+                    const cactusWidth = 30;
+                    const cactusHeight = obstacle.height;
+                    
+                    // Main stem
+                    ctx.fillRect(obstacle.x, canvas.height - cactusHeight - 50, cactusWidth, cactusHeight);
+                    
+                    // Arms
+                    const armHeight = cactusHeight * 0.6;
+                    ctx.fillRect(obstacle.x - 15, canvas.height - armHeight - 50, 15, 10);
+                    ctx.fillRect(obstacle.x + cactusWidth, canvas.height - armHeight - 50, 15, 10);
+                    
+                    // Spikes
+                    ctx.strokeStyle = '#2e8b57';
+                    ctx.lineWidth = 1;
+                    for (let y = 0; y < cactusHeight; y += 10) {
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x - 5, canvas.height - cactusHeight - 50 + y);
+                        ctx.lineTo(obstacle.x - 15, canvas.height - cactusHeight - 50 + y);
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x + cactusWidth + 5, canvas.height - cactusHeight - 50 + y);
+                        ctx.lineTo(obstacle.x + cactusWidth + 15, canvas.height - cactusHeight - 50 + y);
+                        ctx.stroke();
+                    }
+                }
+                else if (obstacle.type === 'coral') {
+                    // Underwater coral - more realistic
+                    ctx.fillStyle = obstacle.color;
+                    
+                    // Coral base
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x, canvas.height - 50);
+                    ctx.lineTo(obstacle.x + 10, canvas.height - obstacle.height - 50);
+                    ctx.bezierCurveTo(
+                        obstacle.x + 15, canvas.height - obstacle.height/2 - 50,
+                        obstacle.x + 25, canvas.height - obstacle.height/3 - 50,
+                        obstacle.x + 40, canvas.height - 50
+                    );
+                    ctx.fill();
+                    
+                    // Coral branches
+                    for (let i = 0; i < 5; i++) {
+                        const branchHeight = obstacle.height * (0.3 + Math.random() * 0.4);
+                        const branchX = obstacle.x + 10 + (i * 6);
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(branchX, canvas.height - 50);
+                        ctx.bezierCurveTo(
+                            branchX + 5, canvas.height - branchHeight/2 - 50,
+                            branchX - 5, canvas.height - branchHeight - 50,
+                            branchX, canvas.height - branchHeight - 50
+                        );
+                        ctx.fill();
+                    }
+                    
+                    // Coral details
+                    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < 10; i++) {
+                        const y = canvas.height - 50 - Math.random() * obstacle.height;
+                        const x = obstacle.x + Math.random() * 40;
+                        ctx.beginPath();
+                        ctx.arc(x, y, 1 + Math.random() * 2, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+                else if (obstacle.type === 'trashcan') {
+                    // Trash can (common for all themes)
+                    ctx.fillStyle = theme.trashcanColor || '#555';
+                    ctx.fillRect(obstacle.x, canvas.height - obstacle.height - 50, obstacle.width, obstacle.height);
+                    
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(obstacle.x - 5, canvas.height - obstacle.height - 50 - 10, obstacle.width + 10, 10);
+                    
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(obstacle.x + 10, canvas.height - obstacle.height - 50 + 10, obstacle.width - 20, 5);
+                    ctx.fillRect(obstacle.x + 10, canvas.height - obstacle.height - 50 + 25, obstacle.width - 20, 5);
+                    
+                    // Trash inside
+                    ctx.fillStyle = '#666';
+                    for (let i = 0; i < 5; i++) {
+                        const x = obstacle.x + 5 + Math.random() * (obstacle.width - 10);
+                        const y = canvas.height - obstacle.height - 50 + 40 + Math.random() * (obstacle.height - 50);
+                        ctx.fillRect(x, y, 3 + Math.random() * 5, 3 + Math.random() * 5);
+                    }
+                }
+                else if (obstacle.type === 'dangerCloud') {
+                    // Dangerous clouds (different from background clouds)
+                    ctx.fillStyle = theme.dangerCloudColor;
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + 20, obstacle.y + 20, 20, 0, Math.PI * 2);
+                    ctx.arc(obstacle.x + 40, obstacle.y + 15, 25, 0, Math.PI * 2);
+                    ctx.arc(obstacle.x + 60, obstacle.y + 20, 20, 0, Math.PI * 2);
+                    ctx.arc(obstacle.x + 40, obstacle.y + 30, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Lightning effect
+                    if (Math.random() > 0.95) {
+                        ctx.strokeStyle = 'yellow';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x + 30, obstacle.y);
+                        ctx.lineTo(obstacle.x + 35, obstacle.y + 40);
+                        ctx.lineTo(obstacle.x + 25, obstacle.y + 45);
+                        ctx.lineTo(obstacle.x + 40, obstacle.y + 50);
+                        ctx.stroke();
+                    }
+                }
+                else if (obstacle.type === 'dangerStar') {
+                    // Dangerous stars (different from background stars)
+                    ctx.fillStyle = theme.dangerStarColor;
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x + 25, obstacle.y);
+                    ctx.lineTo(obstacle.x + 30, obstacle.y + 20);
+                    ctx.lineTo(obstacle.x + 50, obstacle.y + 20);
+                    ctx.lineTo(obstacle.x + 35, obstacle.y + 35);
+                    ctx.lineTo(obstacle.x + 40, obstacle.y + 50);
+                    ctx.lineTo(obstacle.x + 25, obstacle.y + 40);
+                    ctx.lineTo(obstacle.x + 10, obstacle.y + 50);
+                    ctx.lineTo(obstacle.x + 15, obstacle.y + 35);
+                    ctx.lineTo(obstacle.x, obstacle.y + 20);
+                    ctx.lineTo(obstacle.x + 20, obstacle.y + 20);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                else if (obstacle.type === 'dangerTumbleweed') {
+                    // Dangerous tumbleweed (different from background)
+                    ctx.fillStyle = theme.dangerTumbleweedColor;
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + 30, obstacle.y + 30, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Tumbleweed details
+                    ctx.strokeStyle = '#5e3a21';
+                    ctx.lineWidth = 3;
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (Math.PI * 2) / 8 * i;
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x + 30 + Math.cos(angle) * 15, obstacle.y + 30 + Math.sin(angle) * 15);
+                        ctx.lineTo(obstacle.x + 30 + Math.cos(angle) * 30, obstacle.y + 30 + Math.sin(angle) * 30);
+                        ctx.stroke();
+                    }
+                }
+                else if (obstacle.type === 'dangerFish') {
+                    // Dangerous fish
+                    ctx.fillStyle = theme.dangerFishColor;
+                    
+                    // Fish body
+                    ctx.beginPath();
+                    ctx.ellipse(obstacle.x + 30, obstacle.y + 20, 25, 15, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Fish tail
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x + 5, obstacle.y + 20);
+                    ctx.lineTo(obstacle.x + 15, obstacle.y + 10);
+                    ctx.lineTo(obstacle.x + 15, obstacle.y + 30);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Fish eye
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + 40, obstacle.y + 15, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Fish teeth
+                    ctx.fillStyle = '#FFF';
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x + 45, obstacle.y + 20);
+                    ctx.lineTo(obstacle.x + 50, obstacle.y + 22);
+                    ctx.lineTo(obstacle.x + 45, obstacle.y + 24);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                else if (obstacle.type === 'ufo') {
+                    // Space theme UFO
+                    ctx.fillStyle = theme.ufoColor;
+                    ctx.beginPath();
+                    ctx.ellipse(obstacle.x + 30, obstacle.y + 15, 30, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.ellipse(obstacle.x + 30, obstacle.y + 15, 20, 5, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(100, 255, 100, 0.7)';
+                    ctx.fill();
+                    
+                    // UFO light beam
+                    if (Math.random() > 0.95) {
+                        const gradient = ctx.createLinearGradient(
+                            obstacle.x + 30, obstacle.y + 20,
+                            obstacle.x + 30, obstacle.y + 50
+                        );
+                        gradient.addColorStop(0, 'rgba(100, 255, 100, 0.7)');
+                        gradient.addColorStop(1, 'rgba(100, 255, 100, 0)');
+                        
+                        ctx.fillStyle = gradient;
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x + 20, obstacle.y + 50);
+                        ctx.lineTo(obstacle.x + 40, obstacle.y + 50);
+                        ctx.lineTo(obstacle.x + 30, obstacle.y + 20);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+                else if (obstacle.type === 'dangerAsteroid') {
+                    // Space theme asteroid
+                    ctx.fillStyle = theme.dangerAsteroidColor;
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x, obstacle.y + 15);
+                    ctx.lineTo(obstacle.x + 10, obstacle.y);
+                    ctx.lineTo(obstacle.x + 30, obstacle.y + 5);
+                    ctx.lineTo(obstacle.x + 40, obstacle.y + 20);
+                    ctx.lineTo(obstacle.x + 30, obstacle.y + 35);
+                    ctx.lineTo(obstacle.x + 10, obstacle.y + 30);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Asteroid craters
+                    ctx.fillStyle = '#777';
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + 15, obstacle.y + 10, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + 25, obstacle.y + 25, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                else if (obstacle.type === 'tree') {
+                    // Forest theme tree
+                    ctx.fillStyle = theme.treeColor;
+                    // Trunk
+                    ctx.fillRect(obstacle.x + 20, canvas.height - obstacle.height - 50, 20, obstacle.height);
+                    
+                    // Leaves
+                    ctx.fillStyle = '#4caf50';
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + 30, canvas.height - obstacle.height - 50, 30, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Tree details
+                    ctx.strokeStyle = '#3e8e41';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x + 30, canvas.height - obstacle.height - 50 + 30);
+                    ctx.lineTo(obstacle.x + 30, canvas.height - obstacle.height - 50 + 40);
+                    ctx.stroke();
+                }
+                else if (obstacle.type === 'dangerMushroom') {
+                    // Forest theme dangerous mushroom
+                    ctx.fillStyle = theme.dangerMushroomColor;
+                    // Stem
+                    ctx.fillRect(obstacle.x + 25, canvas.height - obstacle.height - 50, 10, obstacle.height - 20);
+                    
+                    // Cap
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + 30, canvas.height - obstacle.height - 50 + 10, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Spots
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + 25, canvas.height - obstacle.height - 50, 5, 0, Math.PI * 2);
+                    ctx.arc(obstacle.x + 35, canvas.height - obstacle.height - 50 + 5, 4, 0, Math.PI * 2);
+                    ctx.arc(obstacle.x + 20, canvas.height - obstacle.height - 50 + 15, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                else if (obstacle.type === 'lavaRock') {
+                    // Volcano theme lava rock
+                    ctx.fillStyle = theme.lavaRockColor;
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x, canvas.height - 50);
+                    ctx.lineTo(obstacle.x + 10, canvas.height - obstacle.height - 50);
+                    ctx.lineTo(obstacle.x + 40, canvas.height - obstacle.height - 50);
+                    ctx.lineTo(obstacle.x + 50, canvas.height - 50);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Lava cracks
+                    ctx.strokeStyle = '#FF4500';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x + 15, canvas.height - obstacle.height/2 - 50);
+                    ctx.lineTo(obstacle.x + 20, canvas.height - obstacle.height/3 - 50);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x + 30, canvas.height - obstacle.height/2 - 50);
+                    ctx.lineTo(obstacle.x + 35, canvas.height - obstacle.height*2/3 - 50);
+                    ctx.stroke();
+                }
+                else if (obstacle.type === 'fireball') {
+                    // Volcano theme fireball
+                    const gradient = ctx.createRadialGradient(
+                        obstacle.x + 25, obstacle.y + 25, 0,
+                        obstacle.x + 25, obstacle.y + 25, 25
+                    );
+                    gradient.addColorStop(0, '#FF8C00');
+                    gradient.addColorStop(0.5, '#FF4500');
+                    gradient.addColorStop(1, '#8B0000');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + 25, obstacle.y + 25, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Fire details
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+                    for (let i = 0; i < 5; i++) {
+                        const angle = Math.PI * 2 / 5 * i;
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x + 25, obstacle.y + 25);
+                        ctx.lineTo(
+                            obstacle.x + 25 + Math.cos(angle) * 15, 
+                            obstacle.y + 25 + Math.sin(angle) * 15
+                        );
+                        ctx.lineTo(
+                            obstacle.x + 25 + Math.cos(angle + 0.3) * 30, 
+                            obstacle.y + 25 + Math.sin(angle + 0.3) * 30
+                        );
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+                else if (obstacle.type === 'candyCane') {
+                    // Candy theme candy cane
+                    ctx.strokeStyle = theme.candyCaneColor;
+                    ctx.lineWidth = 10;
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x + 25, canvas.height - 50);
+                    ctx.lineTo(obstacle.x + 25, canvas.height - obstacle.height - 50);
+                    ctx.stroke();
+                    
+                    // Stripes
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 2;
+                    for (let y = canvas.height - obstacle.height - 50; y < canvas.height - 50; y += 15) {
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x + 15, y);
+                        ctx.lineTo(obstacle.x + 35, y + 10);
+                        ctx.stroke();
+                    }
+                    
+                    // Hook
+                    ctx.strokeStyle = theme.candyCaneColor;
+                    ctx.lineWidth = 10;
+                    ctx.beginPath();
+                    ctx.arc(
+                        obstacle.x + 25, canvas.height - obstacle.height - 50, 
+                        15, Math.PI, Math.PI * 1.5
+                    );
+                    ctx.stroke();
+                }
+                else if (obstacle.type === 'gumdrop') {
+                    // Candy theme gumdrop
+                    const gradient = ctx.createRadialGradient(
+                        obstacle.x + 25, obstacle.y + 15, 0,
+                        obstacle.x + 25, obstacle.y + 15, 25
+                    );
+                    gradient.addColorStop(0, theme.gumdropColor);
+                    gradient.addColorStop(1, '#6a4d9b');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x, obstacle.y + 30);
+                    ctx.quadraticCurveTo(
+                        obstacle.x + 25, obstacle.y,
+                        obstacle.x + 50, obstacle.y + 30
+                    );
+                    ctx.quadraticCurveTo(
+                        obstacle.x + 25, obstacle.y + 40,
+                        obstacle.x, obstacle.y + 30
+                    );
+                    ctx.fill();
+                    
+                    // Highlight
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        obstacle.x + 15, obstacle.y + 15,
+                        10, 5, 0, 0, Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+            });
+            
+            drawBackgroundElements();
+        }
+        
+        function addObstacle() {
+            const theme = themes[currentTheme];
+            const type = theme.obstacleTypes[Math.floor(Math.random() * theme.obstacleTypes.length)];
+            
+            if (type === 'pipe') {
+                const gap = difficulty === 1 ? 250 : difficulty === 2 ? 220 : 200;
+                const topHeight = Math.random() * (canvas.height - gap - 150) + 50;
+                const bottomHeight = canvas.height - gap - topHeight - 50;
+                
+                obstacles.push({
+                    x: canvas.width,
+                    y: 0,
+                    width: 60,
+                    topHeight: topHeight,
+                    bottomHeight: bottomHeight,
+                    color: theme.pipeColor(Math.random() * 360),
+                    type: 'pipe'
+                });
+                
+                // Add bread in safe zone between pipes (less frequent)
+                if (Math.random() > 0.7) {
+                    const breadY = topHeight + gap/2 + Math.random() * 50 - 25;
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: breadY,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            } 
+            else if (type === 'building') {
+                const height = Math.random() * 200 + 150;
+                obstacles.push({
+                    x: canvas.width,
+                    y: canvas.height - height - 50,
+                    width: 50,
+                    height: height,
+                    type: 'building'
+                });
+                
+                // Add bread above building (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'cactus') {
+                const height = Math.random() * 150 + 100;
+                obstacles.push({
+                    x: canvas.width,
+                    y: canvas.height - height - 50,
+                    width: 30,
+                    height: height,
+                    type: 'cactus'
+                });
+                
+                // Add bread near cactus (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'coral') {
+                const height = Math.random() * 150 + 100;
+                obstacles.push({
+                    x: canvas.width,
+                    y: canvas.height - height - 50,
+                    width: 50,
+                    height: height,
+                    color: theme.coralColor(Math.random() * 360),
+                    type: 'coral'
+                });
+                
+                // Add bread above coral (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'trashcan') {
+                obstacles.push({
+                    x: canvas.width,
+                    y: canvas.height - 120 - 50,
+                    width: 50,
+                    height: 120,
+                    type: 'trashcan'
+                });
+                
+                // Add bread near trashcan (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - 200) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'dangerCloud') {
+                obstacles.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height / 3),
+                    width: 80,
+                    height: 40,
+                    type: 'dangerCloud'
+                });
+                
+                // Add bread under cloud (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: obstacles[obstacles.length-1].y + 80 + Math.random() * 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'dangerStar') {
+                obstacles.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height / 2),
+                    width: 50,
+                    height: 50,
+                    type: 'dangerStar'
+                });
+                
+                // Add bread under star (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: obstacles[obstacles.length-1].y + 70 + Math.random() * 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'dangerTumbleweed') {
+                obstacles.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height / 2) + 50,
+                    width: 60,
+                    height: 60,
+                    type: 'dangerTumbleweed'
+                });
+                
+                // Add bread near tumbleweed (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - 150) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'dangerFish') {
+                obstacles.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height / 2) + 50,
+                    width: 60,
+                    height: 40,
+                    type: 'dangerFish'
+                });
+                
+                // Add bread near fish (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - 150) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'ufo') {
+                obstacles.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height / 2),
+                    width: 60,
+                    height: 30,
+                    type: 'ufo'
+                });
+                
+                // Add bread near UFO (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'dangerAsteroid') {
+                obstacles.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height / 2),
+                    width: 40,
+                    height: 40,
+                    type: 'dangerAsteroid'
+                });
+                
+                // Add bread near asteroid (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'tree') {
+                const height = Math.random() * 150 + 100;
+                obstacles.push({
+                    x: canvas.width,
+                    y: canvas.height - height - 50,
+                    width: 40,
+                    height: height,
+                    type: 'tree'
+                });
+                
+                // Add bread near tree (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'dangerMushroom') {
+                const height = 60 + Math.random() * 60;
+                obstacles.push({
+                    x: canvas.width,
+                    y: canvas.height - height - 50,
+                    width: 40,
+                    height: height,
+                    type: 'dangerMushroom'
+                });
+                
+                // Add bread near mushroom (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'lavaRock') {
+                const height = Math.random() * 150 + 100;
+                obstacles.push({
+                    x: canvas.width,
+                    y: canvas.height - height - 50,
+                    width: 50,
+                    height: height,
+                    type: 'lavaRock'
+                });
+                
+                // Add bread near lava rock (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'fireball') {
+                obstacles.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height / 2),
+                    width: 50,
+                    height: 50,
+                    type: 'fireball'
+                });
+                
+                // Add bread near fireball (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'candyCane') {
+                const height = Math.random() * 150 + 100;
+                obstacles.push({
+                    x: canvas.width,
+                    y: canvas.height - height - 50,
+                    width: 50,
+                    height: height,
+                    type: 'candyCane'
+                });
+                
+                // Add bread near candy cane (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+            else if (type === 'gumdrop') {
+                obstacles.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height / 2),
+                    width: 50,
+                    height: 40,
+                    type: 'gumdrop'
+                });
+                
+                // Add bread near gumdrop (less frequent)
+                if (Math.random() > 0.7) {
+                    breads.push({
+                        x: canvas.width + 100,
+                        y: Math.random() * (canvas.height - 100) + 50,
+                        width: 15,
+                        height: 15,
+                        collected: false
+                    });
+                }
+            }
+        }
+        
+        function updateBread() {
+            if (gamePaused) return;
+            
+            for (let i = breads.length - 1; i >= 0; i--) {
+                breads[i].x -= 3 * gameSpeed;
+                
+                if (breads[i].x + breads[i].width < 0) {
+                    breads.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawBread() {
+            breads.forEach(bread => {
+                if (!bread.collected) {
+                    ctx.fillStyle = '#D2B48C';
+                    ctx.beginPath();
+                    ctx.ellipse(bread.x + bread.width/2, bread.y + bread.height/2, bread.width/2, bread.height/3, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#A67C52';
+                    ctx.beginPath();
+                    ctx.ellipse(bread.x + bread.width/2, bread.y + bread.height/3, bread.width/2, bread.height/4, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = '#A67C52';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(bread.x + bread.width/2, bread.y + bread.height/2, bread.width/3, 0, Math.PI);
+                    ctx.stroke();
+                    
+                    // Bread shine
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        bread.x + bread.width/3, bread.y + bread.height/4, 
+                        bread.width/6, bread.height/8, 0, 0, Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+            });
+        }
+        
+        function checkCollisions() {
+            if (gamePaused) return;
+            
+            const duckLeft = duck.x;
+            const duckRight = duck.x + duck.width;
+            const duckTop = duck.y;
+            const duckBottom = duck.y + duck.height;
+            
+            // Check collision with obstacles
+            for (const obstacle of obstacles) {
+                if (obstacle.type === 'pipe' || obstacle.type === 'building' || 
+                    obstacle.type === 'cactus' || obstacle.type === 'coral' ||
+                    obstacle.type === 'tree' || obstacle.type === 'lavaRock' ||
+                    obstacle.type === 'candyCane') {
+                    // For vertical obstacles
+                    if (duckRight > obstacle.x && duckLeft < obstacle.x + obstacle.width) {
+                        // Check top collision
+                        if (duckTop < (obstacle.topHeight || 0)) {
+                            handleCollision();
+                            return;
+                        }
+                        // Check bottom collision
+                        if (duckBottom > canvas.height - (obstacle.bottomHeight || obstacle.height) - 50) {
+                            handleCollision();
+                            return;
+                        }
+                    }
+                }
+                else if (obstacle.type === 'trashcan') {
+                    if (duckRight > obstacle.x && duckLeft < obstacle.x + obstacle.width &&
+                        duckBottom > canvas.height - obstacle.height - 50) {
+                        handleCollision();
+                        return;
+                    }
+                }
+                else {
+                    // For other obstacles (clouds, stars, fish, etc.)
+                    const centerX = obstacle.x + obstacle.width/2;
+                    const centerY = obstacle.y + obstacle.height/2;
+                    const radius = Math.max(obstacle.width, obstacle.height) / 2;
+                    
+                    const duckCenterX = duck.x + duck.width/2;
+                    const duckCenterY = duck.y + duck.height/2;
+                    const duckRadius = Math.max(duck.width, duck.height) / 2;
+                    
+                    const dx = centerX - duckCenterX;
+                    const dy = centerY - duckCenterY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < radius + duckRadius) {
+                        handleCollision();
+                        return;
+                    }
+                }
+            }
+            
+            // Check collision with monster
+            if (monster.active) {
+                const dx = (monster.x + monster.width/2) - (duck.x + duck.width/2);
+                const dy = (monster.y + monster.height/2) - (duck.y + duck.height/2);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDistance = (monster.width/2 + duck.width/2) * 0.8;
+                
+                if (distance < minDistance) {
+                    // Damage boss if duck is moving fast downward
+                    if (duck.velocity > 5) {
+                        bossHealth -= 10;
+                        duck.velocity = -5; // Bounce off
+                        updateBossHealth();
+                        
+                        if (bossHealth <= 0) {
+                            monster.active = false;
+                            bossHealthContainer.style.display = 'none';
+                            bossDefeated = true;
+                            playerUnlocks.ninja = true;
+                            localStorage.setItem('flappyDuckBossDefeated', 'true');
+                            localStorage.setItem('flappyDuckUnlocks', JSON.stringify(playerUnlocks));
+                            
+                            // Create explosion effect
+                            if (particlesEnabled) {
+                                for (let i = 0; i < 50; i++) {
+                                    particles.push({
+                                        x: monster.x + monster.width/2,
+                                        y: monster.y + monster.height/2,
+                                        size: 2 + Math.random() * 4,
+                                        color: i % 2 === 0 ? '#FF4500' : '#FFD700',
+                                        velocityX: -10 + Math.random() * 20,
+                                        velocityY: -10 + Math.random() * 20,
+                                        life: 30 + Math.random() * 30
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        handleCollision();
+                    }
+                    return;
+                }
+            }
+            
+            // Check bread collection
+            for (let i = 0; i < breads.length; i++) {
+                const bread = breads[i];
+                if (!bread.collected &&
+                    duckRight > bread.x && duckLeft < bread.x + bread.width &&
+                    duckBottom > bread.y && duckTop < bread.y + bread.height) {
+                    bread.collected = true;
+                    score += 5;
+                    breadCollected++;
+                    scoreDisplay.textContent = score;
+                    createCollectParticles(bread.x + bread.width/2, bread.y + bread.height/2);
+                    
+                    // Create +5 text effect
+                    const plusFive = document.createElement('div');
+                    plusFive.textContent = '+5';
+                    plusFive.style.position = 'absolute';
+                    plusFive.style.left = `${bread.x + canvas.offsetLeft}px`;
+                    plusFive.style.top = `${bread.y + canvas.offsetTop}px`;
+                    plusFive.style.color = 'gold';
+                    plusFive.style.fontSize = '20px';
+                    plusFive.style.fontWeight = 'bold';
+                    plusFive.style.textShadow = '1px 1px 2px black';
+                    plusFive.style.pointerEvents = 'none';
+                    plusFive.style.animation = 'collect 1s forwards';
+                    
+                    document.body.appendChild(plusFive);
+                    
+                    setTimeout(() => {
+                        plusFive.style.transition = 'all 0.5s';
+                        plusFive.style.opacity = '0';
+                        plusFive.style.transform = 'translateY(-30px)';
+                        setTimeout(() => plusFive.remove(), 500);
+                    }, 500);
+                }
+            }
+        }
+        
+        function handleCollision() {
+            createCollisionParticles(duck.x + duck.width/2, duck.y + duck.height/2);
+            
+            // Vibrate on collision if enabled
+            if (vibrationEnabled && navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+            
+            gameOver();
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            gamePaused = false;
+            cancelAnimationFrame(animationId);
+            pauseBtn.style.display = 'none';
+            menuBtn.style.display = 'none';
+            
+            // Calculate bread earned (1 bread per 10 points)
+            const breadEarned = Math.floor(score / 10);
+            totalBread += breadEarned;
+            localStorage.setItem('flappyDuckBread', totalBread);
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('flappyDuckHighScore', highScore);
+                highScoreDisplay.textContent = `High Score: ${highScore}`;
+                newHighScoreDisplay.style.display = 'block';
+                
+                // Check for unlocks based on high score
+                if (highScore >= 100 && !playerUnlocks.golden) {
+                    playerUnlocks.golden = true;
+                    localStorage.setItem('flappyDuckUnlocks', JSON.stringify(playerUnlocks));
+                }
+                if (highScore >= 200 && !playerUnlocks.rainbow) {
+                    playerUnlocks.rainbow = true;
+                    localStorage.setItem('flappyDuckUnlocks', JSON.stringify(playerUnlocks));
+                }
+                if (highScore >= 300 && !playerUnlocks.ghost) {
+                    playerUnlocks.ghost = true;
+                    localStorage.setItem('flappyDuckUnlocks', JSON.stringify(playerUnlocks));
+                }
+            }
+            
+            finalScoreDisplay.textContent = `Score: ${score}`;
+            breadEarnedDisplay.textContent = `Bread earned: ${breadEarned}`;
+            breadCountDisplay.textContent = totalBread;
+            gameOverScreen.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
